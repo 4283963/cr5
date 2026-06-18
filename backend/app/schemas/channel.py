@@ -30,6 +30,7 @@ class Channel(ChannelBase):
     id: int
     status: str
     last_dispense_at: Optional[datetime]
+    stock_in_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
     tag: Optional[Tag] = None

@@ -92,8 +92,8 @@ class OrderService:
 
     def _allocate_channels(self, order: Order) -> bool:
         for item in order.items:
-            channels = self.channel_service.list_available_channels_by_tag(
-                order.machine_id, item.tag_id
+            channels = self.channel_service.list_available_channels_by_tag_stale_first(
+                order.machine_id, item.tag_id, stale_days=30
             )
 
             if not channels:

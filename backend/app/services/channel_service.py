@@ -1,6 +1,7 @@
 from typing import List, Optional
+from sqlalchemy import func, case
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.models.channel import Channel
 from app.models.machine import Machine
@@ -41,6 +42,47 @@ class ChannelService:
                 Channel.is_enabled == True,
                 Channel.stock > 0,
                 Channel.status == "normal",
+            )
+            .all()
+        )
+
+    def list_available_channels_by_tag_stale_first(
+        self, machine_id: int, tag_id: int, stale_days: int = 30
+    ) -> List[Channel]:
+        now = datetime.now()
+        stale_threshold = now - timedelta(days=stale_days)
+
+        never_dispensed = case(
+            (Channel.last_dispense_at.is_(None), 1),
+            else_=0,
+        )
+
+        is_stale = case(
+            (Channel.last_dispense_at.is_(None), 1),
+            (Channel.last_dispense_at <= stale_threshold, 1),
+            else_=0,
+        )
+
+        effective_date = case(
+            (Channel.stock_in_at.is_(None), Channel.created_at),
+            else_=Channel.stock_in_at,
+        )
+
+        return (
+            self.db.query(Channel)
+            .filter(
+                Channel.machine_id == machine_id,
+                Channel.tag_id == tag_id,
+                Channel.is_enabled == True,
+                Channel.stock > 0,
+                Channel.status == "normal",
+            )
+            .order_by(
+                is_stale.desc(),
+                never_dispensed.desc(),
+                effective_date.asc(),
+                Channel.last_dispense_at.is_(None).desc(),
+                Channel.last_dispense_at.asc(),
             )
             .all()
         )
@@ -87,9 +129,13 @@ class ChannelService:
         if not db_channel:
             return None
 
+        prev_stock = db_channel.stock
         new_stock = min(db_channel.stock + quantity, db_channel.max_stock)
         db_channel.stock = new_stock
         db_channel.status = "normal"
+
+        if prev_stock == 0 and new_stock > 0:
+            db_channel.stock_in_at = datetime.now()
 
         self.db.commit()
         self.db.refresh(db_channel)

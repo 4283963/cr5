@@ -16,6 +16,7 @@ class Channel(Base):
     is_enabled = Column(Boolean, default=True)
     status = Column(String(20), default="normal")
     last_dispense_at = Column(DateTime, nullable=True)
+    stock_in_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
