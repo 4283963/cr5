@@ -42,7 +42,10 @@ def get_order_by_no(order_no: str, db: Session = Depends(get_db)):
 @router.post("", response_model=Order, summary="创建订单")
 def create_order(order_create: OrderCreate, db: Session = Depends(get_db)):
     service = OrderService(db)
-    return service.create_order(order_create)
+    try:
+        return service.create_order(order_create)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/{order_id}", response_model=Order, summary="更新订单")

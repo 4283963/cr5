@@ -43,7 +43,13 @@ class OrderService:
         return f"BK{timestamp}{random_str}"
 
     def create_order(self, order_create: OrderCreate) -> Order:
-        order_no = self._generate_order_no()
+        if order_create.order_no:
+            existing = self.get_order_by_no(order_create.order_no)
+            if existing:
+                raise ValueError(f"订单号 {order_create.order_no} 已存在")
+            order_no = order_create.order_no
+        else:
+            order_no = self._generate_order_no()
 
         total_quantity = sum(item.quantity for item in order_create.items)
 

@@ -37,6 +37,7 @@ class OrderBase(BaseModel):
 
 
 class OrderCreate(OrderBase):
+    order_no: Optional[str] = Field(None, max_length=50, description="订单号（可选，不传则自动生成）")
     items: List[OrderItemCreate] = Field(..., description="订单项列表")
 
 
